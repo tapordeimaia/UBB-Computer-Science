@@ -1,0 +1,102 @@
+     1                                  ; se citeste de la tastatura un nume de fisier si un numar N (0<=N<=8). Programul va lua cel de al N-ulea bit din fiecare caracter (byte) din fisier si va numara bitii 1. Programul va afisa numarul de biti la consol
+     2                                  bits 32 
+     3                                  global start        
+     4                                  extern exit, scanf, fread, fopen, fclose, printf               
+     5                                  import exit msvcrt.dll 
+     6                                  import scanf msvcrt.dll   
+     7                                  import fread msvcrt.dll
+     8                                  import fopen msvcrt.dll
+     9                                  import fclose msvcrt.dll
+    10                                  import printf msvcrt.dll
+    11                                  segment data use32 class=data
+    12 00000000 00000000                    N dd 0
+    13 00000004 256400                      N_format db "%d", 0
+    14 00000007 <res 00000100>              file_name resb 256
+    15 00000107 257300                      file_name_format db "%s", 0
+    16 0000010A 00000000                    file_descriptor dd 0
+    17                                      length equ 1
+    18 0000010E 00000000                    buffer dd 0
+    19 00000112 7200                        acces_mode db "r", 0
+    20 00000114 <res 0000000C>              characters_list resd 3
+    21 00000120 00000000                    current_index dd 0
+    22 00000124 00000000                    number_characters dd 0
+    23 00000128 <res 00000001>              bits_list resb length
+    24 00000129 00000000                    bits_counter dd 0
+    25 0000012D 256400                      print_format db "%d", 0
+    26                                  segment code use32 class=code
+    27                                      start:
+    28 00000000 68[00000000]                    push dword N
+    29 00000005 68[04000000]                    push dword N_format
+    30 0000000A FF15[00000000]                  call [scanf]
+    31 00000010 83C408                          add esp, 4*2
+    32                                          
+    33 00000013 68[07000000]                    push dword file_name
+    34 00000018 68[07010000]                    push dword file_name_format
+    35 0000001D FF15[00000000]                  call [scanf]
+    36 00000023 83C408                          add esp, 4*2
+    37                                          
+    38 00000026 68[12010000]                    push dword acces_mode
+    39 0000002B 68[07000000]                    push dword file_name
+    40 00000030 FF15[00000000]                  call [fopen]
+    41 00000036 83C408                          add esp, 4*2
+    42                                          
+    43 00000039 83F800                          cmp eax, 0
+    44 0000003C 0F84A9000000                    je final
+    45                                          
+    46 00000042 A3[0A010000]                    mov [file_descriptor], eax
+    47                                          
+    48                                          reading_loop:
+    49 00000047 FF35[0A010000]                      push dword [file_descriptor]
+    50 0000004D 6A01                                push dword length
+    51 0000004F 6A01                                push dword 1
+    52 00000051 68[0E010000]                        push dword buffer
+    53 00000056 FF15[00000000]                      call [fread]
+    54 0000005C 83C410                              add esp, 4*4
+    55                                              
+    56 0000005F 83F800                              cmp eax, 0 
+    57 00000062 7422                                je end_reading_loop
+    58                                              
+    59 00000064 8B1D[20010000]                      mov ebx, [current_index]
+    60 0000006A A1[0E010000]                        mov eax, [buffer]
+    61 0000006F 89049D[14010000]                    mov [characters_list+ebx*4], eax
+    62 00000076 8305[20010000]01                    add dword[current_index], 1
+    63 0000007D 8305[24010000]01                    add dword[number_characters], 1        
+    64                                  
+    65                                              
+    66 00000084 EBC1                                jmp reading_loop
+    67                                          
+    68                                          end_reading_loop:
+    69                                              
+    70 00000086 FF35[0A010000]                      push dword [file_descriptor]
+    71 0000008C FF15[00000000]                      call [fclose]
+    72 00000092 83C404                              add esp, 4
+    73                                              
+    74 00000095 BE[14010000]                    mov esi, characters_list
+    75 0000009A 8305[24010000]01                add dword[number_characters], 1
+    76 000000A1 8B0D[24010000]                  mov ecx, [number_characters]
+    77                                          get_nth_bit:
+    78 000000A7 FF0D[24010000]                      dec dword[number_characters]
+    79 000000AD 833D[24010000]00                    cmp dword[number_characters], 0
+    80 000000B4 7421                                je print
+    81 000000B6 AC                                  lodsb
+    82 000000B7 832D[00000000]01                    sub dword[N], 1
+    83 000000BE 8A0D[00000000]                      mov cl, [N]
+    84 000000C4 D2E0                                shl al, cl
+    85 000000C6 2480                                and al, 10000000b
+    86 000000C8 3C80                                cmp al, 10000000b
+    87 000000CA 7402                                je add_counter
+    88 000000CC EBD9                                jmp get_nth_bit
+    89                                              add_counter:
+    90 000000CE 8305[29010000]01                        add dword[bits_counter], 1
+    91 000000D5 EBD0                                    jmp get_nth_bit
+    92                                          
+    93                                          print:
+    94 000000D7 FF35[29010000]                      push dword [bits_counter]
+    95 000000DD 68[2D010000]                        push dword print_format
+    96 000000E2 FF15[00000000]                      call [printf]
+    97 000000E8 83C408                              add esp, 4*2
+    98                                          
+    99                                          
+   100                                      final:    
+   101 000000EB 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+   102 000000ED FF15[00000000]                  call    [exit]       ; call exit to terminate the program

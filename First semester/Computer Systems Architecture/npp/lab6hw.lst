@@ -1,0 +1,86 @@
+     1                                  ; An array of words is given. Write an asm program in order to obtain an array of doublewords, where each doubleword will contain each nibble unpacked on a byte (each nibble will be preceded by a 0 digit), arranged 
+     2                                  bits 32 ; assembling for the 32 bits architecture
+     3                                  
+     4                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     5                                  global start        
+     6                                  
+     7                                  ; declare external functions needed by our program
+     8                                  extern exit               ; tell nasm that exit exists even if we won't be defining it
+     9                                  import exit msvcrt.dll    ; exit is a function that ends the calling process. It is defined in msvcrt.dll
+    10                                                            ; msvcrt.dll contains exit, printf and all the other important C-runtime specific functions
+    11                                  
+    12                                  ; our data is declared here (the variables needed by our program)
+    13                                  segment data use32 class=data
+    14 00000000 185246257658                a dw 5218h, 2546h, 5876h
+    15                                      lena equ ($-a)/2 
+    16 00000006 00000000<rept>              b times lena dd 0
+    17 00000012 00000000                    c dd 0
+    18                                  segment code use32 class=code
+    19                                      start:        
+    20 00000000 BE[00000000]                    mov esi, a
+    21 00000005 BF[06000000]                    mov edi, b 
+    22 0000000A B903000000                      mov ecx, lena 
+    23 0000000F E370                            jecxz end_loop
+    24                                          my_loop:
+    25                                             ; Take each word from a, and put a 0 between each digit
+    26 00000011 66AD                               lodsw ; AX = a word from a and increments esi with 2 ; 5218 ; AH = 52, AL = 18 = 00011000
+    27 00000013 88C3                               mov bl, al 
+    28 00000015 80E30F                             and bl, 0x0F ; BL = 00001000 = 08
+    29 00000018 88C6                               mov Dh, al 
+    30 0000001A 80E6F0                             and dh, 0xF0 ; DH = 00010000 = 10
+    31 0000001D C0CE04                             ror Dh, 4 ; DH = 00000001 = 01
+    32 00000020 88DA                               mov DL, BL ; DX = 0108
+    33 00000022 C1E210                             shl EDX, 16 ; EDX = 01080000
+    34 00000025 88E3                               mov bl, ah
+    35 00000027 80E30F                             and bl, 0x0F ; BL = 00000010 = 02
+    36 0000002A 88E6                               mov dh, ah
+    37 0000002C 80E6F0                             and dh, 0xF0 ; DH = 01010000 = 50
+    38 0000002F C0CE04                             ror dh, 4 ; DH = 00000101 = 05           
+    39 00000032 88DA                               mov DL, BL ; EDX = 01080502
+    40 00000034 6689D3                             mov BX, DX; EBX = 00000502
+    41 00000037 C1EA10                             shr EDX, 16 ; EDX = 00000108
+    42 0000003A 38D6                               cmp DH, DL
+    43 0000003C 7606                               jna skip_change_edx 
+    44 0000003E 88D0                               mov AL, DL
+    45 00000040 88F2                               mov DL, DH
+    46 00000042 88C6                               mov DH, AL
+    47                                             skip_change_edx: ; DX = 0108
+    48 00000044 38DF                                   cmp BH, BL
+    49 00000046 7606                                   jna skip_change_ebx 
+    50 00000048 88D8                                   mov AL, BL 
+    51 0000004A 88FB                                   mov BL, BH
+    52 0000004C 88C7                                   mov BH, AL
+    53                                                 skip_change_ebx: ; BX = 0205
+    54 0000004E 38FA                                       cmp Dl, BH
+    55 00000050 7606                                       jna skip_next_change
+    56 00000052 88F8                                       mov AL, BH
+    57 00000054 88D7                                       mov BH, DL
+    58 00000056 88C2                                       mov DL, AL
+    59                                                     skip_next_change: ; DX = 0102, BX = 0805
+    60 00000058 38D6                                           cmp DH, DL
+    61 0000005A 7606                                           jna skip_change_edx2 
+    62 0000005C 88D0                                           mov AL, DL
+    63 0000005E 88F2                                           mov DL, DH
+    64 00000060 88C6                                           mov DH, AL
+    65                                                         skip_change_edx2: ; DX = 0102
+    66 00000062 38DF                                               cmp BH, BL
+    67 00000064 7606                                               jna skip_change_ebx2 
+    68 00000066 88D8                                               mov AL, BL 
+    69 00000068 88FB                                               mov BL, BH
+    70 0000006A 88C7                                               mov BH, AL
+    71                                                             skip_change_ebx2: ; BX = 0508
+    72 0000006C 38DE                                                   cmp DH, BL
+    73 0000006E 7606                                                   jna skip_next_change2
+    74 00000070 88D8                                                   mov AL, BL
+    75 00000072 88F3                                                   mov BL, DH
+    76 00000074 88C6                                                   mov DH, AL
+    77                                                                 skip_next_change2: ;DX = 0102, BX = 0508
+    78 00000076 C1E210                                                     shl EDX, 16
+    79 00000079 6689DA                                                     mov DX, BX 
+    80 0000007C 89D0                                                       mov EAX, EDX
+    81 0000007E AB                                                         stosd ; store a string of doublewords from EAX                                    
+    82 0000007F E290                            loop my_loop  
+    83                                          end_loop:
+    84                                          
+    85 00000081 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    86 00000083 FF15[00000000]                  call    [exit]       ; call exit to terminate the program

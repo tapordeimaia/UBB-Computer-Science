@@ -1,0 +1,86 @@
+     1                                  bits 32 
+     2                                  global start        
+     3                                  extern exit, fopen, fscanf, fclose, fread, printf               
+     4                                  import exit msvcrt.dll 
+     5                                  import fopen msvcrt.dll 
+     6                                  import fscanf msvcrt.dll
+     7                                  import fclose msvcrt.dll  
+     8                                  import fread msvcrt.dll
+     9                                  import printf msvcrt.dll
+    10                                  segment data use32 class=data
+    11 00000000 696E7075745F746573-         file_name db "input_test.txt", 0
+    11 00000009 742E74787400       
+    12 0000000F 7200                        acces_mode db "r", 0
+    13 00000011 00000000                    file_descriptor dd 0
+    14 00000015 <res 00000190>              buffer resd 100
+    15 000001A5 2573000000000000            reading_format dd "%s", 0
+    16 000001AD 00000000                    index_of_list dd 0
+    17 000001B1 64000000                    length dd 100
+    18 000001B5 <res 00000190>              words_list resd 100
+    19 00000345 00000000                    words_counter dd 0
+    20 00000349 00000000                    sentence_words_counter dd 0
+    21 0000034D 256400                      writing_format db "%d", 0
+    22 00000350 00000000                    printed_word dd 0
+    23                                  segment code use32 class=code
+    24                                      start:
+    25 00000000 68[0F000000]                    push dword acces_mode
+    26 00000005 68[00000000]                    push dword file_name
+    27 0000000A FF15[00000000]                  call [fopen]
+    28 00000010 83C408                          add esp, 4*2
+    29                                          
+    30 00000013 83F800                          cmp eax, 0
+    31 00000016 7468                            je final
+    32                                          
+    33 00000018 A3[11000000]                    mov [file_descriptor], eax
+    34                                          
+    35                                          reading_loop:
+    36 0000001D 68[15000000]                        push dword buffer
+    37 00000022 68[A5010000]                        push dword reading_format
+    38 00000027 FF35[11000000]                      push dword [file_descriptor]
+    39 0000002D FF15[00000000]                      call [fscanf]
+    40 00000033 83C40C                              add esp, 4*3
+    41                                              
+    42 00000036 83F801                              cmp eax, 1
+    43 00000039 7522                                jne end_reading_loop
+    44                                              
+    45 0000003B 8B1D[AD010000]                      mov ebx, [index_of_list]
+    46 00000041 A1[15000000]                        mov eax, [buffer]
+    47 00000046 89049D[B5010000]                    mov [words_list+ebx*4], eax
+    48 0000004D 8305[AD010000]01                    add dword[index_of_list], 1
+    49 00000054 8305[45030000]01                    add dword[words_counter], 1
+    50                                              
+    51 0000005B EBC0                                jmp reading_loop
+    52                                              
+    53                                          end_reading_loop:
+    54 0000005D FF35[11000000]                      push dword [file_descriptor]
+    55 00000063 FF15[00000000]                      call [fclose]
+    56 00000069 83C404                              add esp, 4
+    57                                          
+    58                                          ;mov esi, words_list  
+    59                                          ;mov ecx, [words_counter]  
+    60                                          ;mov edx, writing_format 
+    61                                          ;xor eax, eax
+    62                                          ;print_loop: 
+    63                                          ;    push dword [words_counter]
+    64                                          ;    push edx            
+    65                                          ;    call [printf]       
+    66                                          ;    add esp, 8          
+    67                                  
+    68                                          ;add esi, 4          
+    69                                          ;loop print_loop   
+    70                                          
+    71 0000006C FF35[45030000]                  push dword [words_counter]
+    72 00000072 68[4D030000]                    push dword writing_format
+    73 00000077 FF15[00000000]                  call [printf]
+    74 0000007D 83C420                          add esp, 4*8
+    75                                          
+    76                                          
+    77                                              
+    78                                          
+    79                                              
+    80                                          
+    81                                          
+    82                                          
+    83                                      final:    
+    84 00000080 6A00                            push    dword 0      
+    85 00000082 FF15[00000000]                  call    [exit]       

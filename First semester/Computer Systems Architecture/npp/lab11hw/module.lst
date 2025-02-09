@@ -1,0 +1,92 @@
+     1                                  bits 32
+     2                                  
+     3                                  global  _parse_numbers
+     4                                  
+     5                                  
+     6                                  segment data public data use32
+     7                                  
+     8                                  segment code public code use32
+     9                                  
+    10                                      ; Function: parse_numbers
+    11                                      ; Parses signed integers from a null-terminated string
+    12                                      ; Inputs:
+    13                                      ;   ecx - Address of the input buffer
+    14                                      ;   edx - Address of the numbers array
+    15                                      ;   edi - Address to store the count of parsed numbers
+    16                                      _parse_numbers:
+    17 00000000 55                              push ebp                  ; Save base pointer
+    18 00000001 89E5                            mov ebp, esp              ; Set up stack frame
+    19                                  
+    20 00000003 8B4D08                          mov ecx, [ebp + 8]        ; Address of input buffer
+    21 00000006 8B550C                          mov edx, [ebp + 12]       ; Address of numbers array
+    22 00000009 8B7D10                          mov edi, [ebp + 16]       ; Address to store count of parsed numbers
+    23                                  
+    24 0000000C 31DB                            xor ebx, ebx              ; Counter for numbers (EBX = 0)
+    25 0000000E 31F6                            xor esi, esi              ; Temporary variable for current number
+    26 00000010 31C0                            xor eax, eax              ; Clear EAX (used for digit processing)
+    27 00000012 C60700                          mov byte [edi], 0         ; Initialize num_count to 0
+    28                                  
+    29                                      _parse_loop:
+    30 00000015 8A01                            mov al, [ecx]             ; Load current character
+    31 00000017 3C00                            cmp al, 0                 ; Check for end of string
+    32 00000019 7449                            je _parse_done            ; If null-terminator, finish parsing
+    33                                  
+    34 0000001B 3C20                            cmp al, 32                ; Check for space (ASCII: 32)
+    35 0000001D 742A                            je _save_number           ; If space, save the current number
+    36                                  
+    37 0000001F 3C2D                            cmp al, '-'               ; Check for minus sign
+    38 00000021 750B                            jne _check_digit          ; If not a minus sign, check if it's a digit
+    39 00000023 85F6                            test esi, esi             ; Check if we are already parsing a number
+    40 00000025 751F                            jnz _next_char            ; Ignore '-' in the middle of a number
+    41 00000027 BEFFFFFFFF                      mov esi, -1               ; Mark the number as negative
+    42 0000002C EB18                            jmp _next_char
+    43                                  
+    44                                      _check_digit:
+    45 0000002E 2C30                            sub al, '0'               ; Convert ASCII to a digit (0-9)
+    46 00000030 3C09                            cmp al, 9
+    47 00000032 772D                            ja _invalid_char          ; Ignore invalid characters
+    48 00000034 85F6                            test esi, esi             ; Check if we're starting a new number
+    49 00000036 7407                            jz _start_number          ; If no number is being parsed, start one
+    50                                  
+    51 00000038 6BDB0A                          imul ebx, ebx, 10         ; Multiply current number by 10
+    52 0000003B 01C3                            add ebx, eax              ; Add the digit to the current number
+    53 0000003D EB07                            jmp _next_char
+    54                                  
+    55                                      _start_number:
+    56 0000003F 89C3                            mov ebx, eax              ; Start a new number with the current digit
+    57 00000041 BE01000000                      mov esi, 1                ; Mark number as positive (default)
+    58                                  
+    59                                      _next_char:
+    60 00000046 41                              inc ecx                   ; Move to the next character
+    61 00000047 EBCC                            jmp _parse_loop
+    62                                  
+    63                                      _save_number:
+    64 00000049 85F6                            test esi, esi             ; Check if a number is being parsed
+    65 0000004B 7411                            jz _skip_save             ; If not, skip saving
+    66 0000004D 85F6                            test esi, esi             ; Check if the number is negative
+    67 0000004F 7F02                            jg _save_positive
+    68 00000051 F7DB                            neg ebx                   ; If negative, negate the number
+    69                                  
+    70                                      _save_positive:
+    71 00000053 891A                            mov [edx], ebx            ; Save the current number to the numbers array
+    72 00000055 83C204                          add edx, 4                ; Move to the next position in the array
+    73 00000058 FE07                            inc byte [edi]            ; Increment the number count
+    74 0000005A 31DB                            xor ebx, ebx              ; Reset current number
+    75 0000005C 31F6                            xor esi, esi              ; Reset sign flag
+    76                                      _skip_save:
+    77 0000005E 41                              inc ecx                   ; Skip the space
+    78 0000005F EBB4                            jmp _parse_loop
+    79                                  
+    80                                      _invalid_char:
+    81 00000061 41                              inc ecx                   ; Ignore invalid characters
+    82 00000062 EBB1                            jmp _parse_loop
+    83                                  
+    84                                      _parse_done:
+    85 00000064 85F6                            test esi, esi             ; Check if there's a number left to save
+    86 00000066 7402                            jz _parse_exit            ; If not, exit
+    87 00000068 EBDF                            jmp _save_number          ; Save the last number
+    88                                  
+    89                                      _parse_exit:
+    90 0000006A 89EC                            mov esp, ebp
+    91 0000006C 5D                              pop ebp                   ; Restore base pointer
+    92 0000006D C3                              ret

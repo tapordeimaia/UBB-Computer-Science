@@ -1,0 +1,41 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; declare external functions needed by our program
+     7                                  extern exit               ; tell nasm that exit exists even if we won't be defining it
+     8                                  import exit msvcrt.dll    ; exit is a function that ends the calling process. It is defined in msvcrt.dll
+     9                                                            ; msvcrt.dll contains exit, printf and all the other important C-runtime specific functions
+    10                                  
+    11                                  ; our data is declared here (the variables needed by our program)
+    12                                  segment data use32 class=data
+    13 00000000 0A0B0D1B1C28                a db 10, 11, 13, 27, 28, 40
+    14                                      l equ $-a
+    15 00000006 00<rept>                    b times l db 0
+    16 0000000C 02                          two db 2
+    17                                  segment code use32 class=code
+    18                                      start: ; given array of bytes compute array b containing only odd numbers ; unsigned
+    19                                          
+    20 00000000 BE[00000000]                    mov esi, a
+    21 00000005 BF[06000000]                    mov edi, b
+    22 0000000A B906000000                      mov ecx, l
+    23 0000000F E313                            jecxz end_loop
+    24                                          myrepeat:
+    25                                             ;mov AL, [esi]
+    26 00000011 AC                                 lodsb ; load al and inc esi
+    27 00000012 B400                               mov AH, 0 ; AX = element
+    28 00000014 F635[0C000000]                     div byte [two] ; AH = AX%2
+    29 0000001A 80FC00                             cmp AH, 0
+    30 0000001D 7403                               je skip
+    31 0000001F 8A06                                   mov AL, [esi]
+    32                                                 ;mov [edi], AL
+    33 00000021 AA                                     stosb ; byte[edi] and inc edi
+    34                                                 ;inc edi
+    35                                             skip:
+    36                                             ;inc esi
+    37 00000022 E2ED                            loop myrepeat
+    38                                          end_loop:
+    39                                          
+    40 00000024 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    41 00000026 FF15[00000000]                  call    [exit]       ; call exit to terminate the program

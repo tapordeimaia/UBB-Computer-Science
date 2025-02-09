@@ -1,0 +1,116 @@
+     1                                  ; A text file is given. Read the content of the file, count the number of consonants and display the result on the screen. The name of text file is defined in the data segment.
+     2                                  bits 32 ; assembling for the 32 bits architecture
+     3                                  
+     4                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     5                                  global start        
+     6                                  
+     7                                  ; declare external functions needed by our program
+     8                                  extern exit, fopen, fclose, fread, fprintf, printf
+     9                                  import exit msvcrt.dll
+    10                                  import fopen msvcrt.dll
+    11                                  import fclose msvcrt.dll
+    12                                  import fread msvcrt.dll
+    13                                  import fprintf msvcrt.dll
+    14                                  import printf msvcrt.dll
+    15                                  
+    16                                  ; our data is declared here (the variables needed by our program)
+    17                                  segment data use32 class=data
+    18 00000000 6C6162386877327465-         file_name db "lab8hw2text.txt", 0
+    18 00000009 78742E74787400     
+    19 00000010 7200                        access_mode db "r", 0
+    20 00000012 FFFFFFFF                    file_descriptor dd -1
+    21                                      len equ 100
+    22 00000016 00<rept>                    text2 times len db 0
+    23 0000007A 5468652066696C6520-         msg db "The file contains %d consonants", 0
+    23 00000083 636F6E7461696E7320-
+    23 0000008C 256420636F6E736F6E-
+    23 00000095 616E747300         
+    24 0000009A 00000000                    number_read_char dd 0
+    25 0000009E 00000000                    x dd 0
+    26                                  segment code use32 class=code
+    27                                      start:
+    28                                          ; open a file
+    29 00000000 68[10000000]                    push dword access_mode     
+    30 00000005 68[00000000]                    push dword file_name
+    31 0000000A FF15[00000000]                  call [fopen]
+    32 00000010 83C408                          add esp, 4*2
+    33                                          
+    34 00000013 A3[12000000]                    mov [file_descriptor], eax
+    35                                          
+    36                                          ; see if creating the file was successful
+    37 00000018 83F800                          cmp eax, 0
+    38 0000001B 0F849E000000                    je final
+    39                                                
+    40                                          
+    41                                          ; read from a file
+    42                                          read_loop:
+    43 00000021 FF35[12000000]                      push dword [file_descriptor]
+    44 00000027 6A64                                push dword len
+    45 00000029 6A01                                push dword 1
+    46 0000002B 68[16000000]                        push dword text2       
+    47 00000030 FF15[00000000]                      call [fread]
+    48 00000036 83C410                              add esp, 4*4
+    49                                              
+    50 00000039 83F800                              cmp eax, 0
+    51 0000003C 745E                                je display_result
+    52                                              
+    53 0000003E A3[9A000000]                        mov [number_read_char], eax
+    54                                              
+    55                                              
+    56 00000043 BE[16000000]                        mov esi, text2
+    57 00000048 8B0D[9A000000]                      mov ecx, [number_read_char]
+    58 0000004E E36F                                jecxz final
+    59                                              count_loop:
+    60 00000050 AC                                      lodsb
+    61 00000051 3C00                                    cmp al, 0
+    62 00000053 7443                                    je skip_char
+    63 00000055 3C20                                    cmp al, ' '
+    64 00000057 743F                                    je skip_char
+    65 00000059 3C61                                    cmp al, 'a'
+    66 0000005B 743B                                    je skip_char
+    67 0000005D 3C65                                    cmp al, 'e'
+    68 0000005F 7437                                    je skip_char
+    69 00000061 3C69                                    cmp al, 'i'
+    70 00000063 7433                                    je skip_char
+    71 00000065 3C6F                                    cmp al, 'o'
+    72 00000067 742F                                    je skip_char
+    73 00000069 3C75                                    cmp al, 'u'
+    74 0000006B 742B                                    je skip_char
+    75 0000006D 3C41                                    cmp al, 'A'
+    76 0000006F 7427                                    je skip_char
+    77 00000071 3C45                                    cmp al, 'E'
+    78 00000073 7423                                    je skip_char
+    79 00000075 3C49                                    cmp al, 'I'
+    80 00000077 741F                                    je skip_char
+    81 00000079 3C4F                                    cmp al, 'O'
+    82 0000007B 741B                                    je skip_char
+    83 0000007D 3C55                                    cmp al, 'U'
+    84 0000007F 7417                                    je skip_char
+    85 00000081 3C41                                    cmp al, 65              
+    86 00000083 7C13                                    jl skip_char
+    87 00000085 3C5A                                    cmp al, 90
+    88 00000087 7E08                                    jle is_consonant
+    89 00000089 3C61                                    cmp al, 97              
+    90 0000008B 7C0B                                    jl skip_char
+    91 0000008D 3C7A                                    cmp al, 122
+    92 0000008F 7F07                                    jg skip_char
+    93                                              is_consonant:
+    94 00000091 8305[9E000000]01                        add dword[x], 1
+    95                                              skip_char:
+    96 00000098 E2B6                                    loop count_loop
+    97 0000009A EB85                                    jmp read_loop
+    98                                            
+    99                                          display_result:  
+   100 0000009C FF35[9E000000]                      push dword[x]
+   101 000000A2 68[7A000000]                        push dword msg
+   102 000000A7 FF15[00000000]                      call [printf]
+   103 000000AD 83C408                              add esp, 4*2
+   104                                            
+   105                                          clean_up:
+   106 000000B0 FF35[12000000]                      push dword [file_descriptor]
+   107 000000B6 FF15[00000000]                      call [fclose]
+   108 000000BC 83C404                              add esp, 4
+   109                                              
+   110                                          final:
+   111 000000BF 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+   112 000000C1 FF15[00000000]                  call    [exit]       ; call exit to terminate the program

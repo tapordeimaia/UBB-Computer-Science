@@ -1,0 +1,59 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; declare external functions needed by our program
+     7                                  extern exit               ; tell nasm that exit exists even if we won't be defining it
+     8                                  import exit msvcrt.dll    ; exit is a function that ends the calling process. It is defined in msvcrt.dll
+     9                                                            ; msvcrt.dll contains exit, printf and all the other important C-runtime specific functions
+    10                                  
+    11                                  ; our data is declared here (the variables needed by our program)
+    12                                  segment data use32 class=data
+    13 00000000 5E00                        a dw 0000000001011110b
+    14 00000002 9FAD                        b dw 1010110110011111b
+    15 00000004 00000000                    c dd 0
+    16                                  segment code use32 class=code
+    17                                      start:
+    18 00000000 66BB0000                        mov BX, 0
+    19                                          
+    20                                          ;the bits 0-3 of C are the same as the bits 5-8 of B
+    21 00000004 66A1[02000000]                  mov AX, [b]
+    22 0000000A 6625E001                        and AX, 0000000111100000b ; AX=0000000110000000
+    23 0000000E B105                            mov CL, 5
+    24 00000010 66D3C0                          rol AX, CL ; AX=0000000000001100
+    25 00000013 6609C3                          or BX, AX ; BX=0000000000001100
+    26                                          
+    27                                          ;the bits 4-8 of C are the same as the bits 0-4 of A
+    28 00000016 66A1[00000000]                  mov AX, [a]
+    29 0000001C 6683E01F                        and AX, 0000000000011111b ; AX = 0000000000011110
+    30 00000020 B104                            mov CL, 4
+    31 00000022 66D3C8                          ror AX, CL ; AX = 0000000111100000
+    32 00000025 6609C3                          or BX, AX ; BX = 0000000111101100
+    33                                          
+    34                                          ;the bits 9-15 of C are the same as the bits 6-12 of A
+    35 00000028 66A1[00000000]                  mov AX, [a]
+    36 0000002E 6625C01F                        and AX, 0001111111000000b ; AX = 0000000001000000
+    37 00000032 B103                            mov CL, 3
+    38 00000034 66D3C8                          ror AX, CL ; AX = 0000001000000000
+    39 00000037 6609C3                          or BX, AX ; BX = 0000001111101100
+    40                                          
+    41                                          ;the bits 16-31 of C are the same as the bits of B
+    42 0000003A 6689D8                          mov AX, BX
+    43 0000003D 66BA0000                        mov DX, 0
+    44 00000041 6652                            push DX
+    45 00000043 6650                            push AX
+    46 00000045 58                              pop EAX
+    47 00000046 89C3                            mov EBX, EAX
+    48 00000048 66A1[02000000]                  mov AX, [b]
+    49 0000004E 66BA0000                        mov DX, 0 ; DX:AX = 00000000000000001010110110011111
+    50 00000052 6652                            push DX
+    51 00000054 6650                            push AX
+    52 00000056 58                              pop EAX
+    53 00000057 B110                            mov CL, 16
+    54 00000059 D3C8                            ror EAX, CL ; EAX = 10101101100111110000000000000000
+    55 0000005B 09C3                            or EBX, EAX ; EBX = 10101101100111110000001111101100
+    56 0000005D 891D[04000000]                  mov [c], EBX
+    57                                          
+    58 00000063 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    59 00000065 FF15[00000000]                  call    [exit]       ; call exit to terminate the program

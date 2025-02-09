@@ -1,0 +1,65 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; declare external functions needed by our program
+     7                                  extern exit               ; tell nasm that exit exists even if we won't be defining it
+     8                                  import exit msvcrt.dll    ; exit is a function that ends the calling process. It is defined in msvcrt.dll
+     9                                                            ; msvcrt.dll contains exit, printf and all the other important C-runtime specific functions
+    10                                  
+    11                                  ; our data is declared here (the variables needed by our program)
+    12                                  segment data use32 class=data
+    13 00000000 14000000                    a dd 20
+    14 00000004 28000000                    b dd 40
+    15 00000008 0102030405                  s db 1, 2, 3 , 4, 5
+    16                                      len equ $-s 
+    17                                  segment code use32 class=code
+    18                                      sumarray:
+    19                                          ; int sumarray (s[] - array, len - int)
+    20                                          ; eax contains result (sum of all elements)
+    21                                          ; free the stack in the procedure
+    22                                          ; ret address - esp 
+    23                                          ; s - esp+4
+    24                                          ; len = esp+8
+    25 00000000 8B4C2408                        mov ecx, [esp+8]
+    26 00000004 8B742404                        mov esi, [esp+4]
+    27 00000008 B300                            mov bl, 0
+    28 0000000A E305                            jecxz .end_lopp
+    29                                          .myrepeat: 
+    30 0000000C AC                                  lodsb
+    31 0000000D 00C3                                add bl, al
+    32 0000000F E2FB                            loop .myrepeat         
+    33                                          .end_lopp:
+    34 00000011 B800000000                      mov eax, 0
+    35 00000016 88D8                            mov al, bl
+    36 00000018 C20800                          ret 4*2
+    37                                          
+    38                                      sum: 
+    39                                          ; int sum(int a, int b)
+    40                                          ; params in rev oreder on stack
+    41                                          ; result in eax (sum of numbers)
+    42                                          ; procedure will free the stack for the 2 params (not the caller program)
+    43                                          ; ret address - esp
+    44                                          ; a - esp+4
+    45                                          ; b = esp+8
+    46 0000001B 8B442404                        mov eax, [esp+4]
+    47 0000001F 03442408                        add eax, [esp+8]
+    48 00000023 C20800                          ret 4*2 
+    49                                      start:
+    50 00000026 FF35[04000000]                  push dword [b]
+    51 0000002C FF35[00000000]                  push dword [a]
+    52 00000032 E8E4FFFFFF                      call sum
+    53                                          ;add esp, 4*2
+    54                                          
+    55                                          
+    56                                          
+    57                                          ; eax contains sum
+    58                                          
+    59 00000037 6A05                            push dword len
+    60 00000039 68[08000000]                    push dword s
+    61 0000003E E8BDFFFFFF                      call sumarray
+    62                                          
+    63                                          
+    64 00000043 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    65 00000045 FF15[00000000]                  call    [exit]       ; call exit to terminate the program

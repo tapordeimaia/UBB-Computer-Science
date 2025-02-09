@@ -1,0 +1,10 @@
+1. Sa se citeasca de la tastatura mai multe numere pana la citirea valorii 0. Sa se scrie intr-un fisier, separate de spatii, doar acele numere negative care au numar impar de biti 0 (cu valoarea 0).
+
+
+2. Sa se citeasca de la tastatura un numar n, apoi sa se citeasca mai multe cuvinet pana se citeste caracterul #. Sa se scrie intr-un fisier text toate cuvintele citite care au cel putin n vocale
+
+
+3. Se citeste de la tastatura un nume de fisier. Afisati toate cuvintele din fisier de pe pozitii pare care contin cel putin o litera mica (numerotarea incepe de la 0)
+
+
+4. Se citeste de la tastatura un nume de fisier si un numar N. Programul va lua cel de-al N-ulea bit din fiecare caracter(byte) din fisier si va face suma acestor biti. Programul va afisa suma la consola
