@@ -1,10 +1,10 @@
-#UBB Computer Science Portofolio
+# UBB Computer Science Portofolio 
 
 This repository contains a collection of projects, courses, and seminar works that I have completed during my studies at Babeș-Bolyai University, Cluj-Napoca, as a Computer Science student.
 
-#📂 Courses
+## 📂 Courses
 
-#1️⃣ Semester
+### 1️⃣ Semester
 
 1. [Algebra](https://github.com/tapordeimaia/UBB-Computer-Science/tree/main/First%20semester/Algebra)
 2. [Calculus](https://github.com/tapordeimaia/UBB-Computer-Science/tree/main/First%20semester/Mathematical%20Analysis)
