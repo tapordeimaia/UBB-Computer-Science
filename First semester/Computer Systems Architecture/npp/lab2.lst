@@ -1,0 +1,33 @@
+     1                                  ; Write a program in the assembly language that computes the following arithmetic expression, considering the following data types for the variables:
+     2                                  ; a - byte, b - word
+     3                                  ; (b / a * 2 + 10) * b - b * 15;
+     4                                  bits 32 
+     5                                  global start        
+     6                                  extern exit               
+     7                                  import exit msvcrt.dll    
+     8                                  segment data use32 class=data
+     9 00000000 0A                          a db 10
+    10 00000001 2800                        b dw 40
+    11                                      
+    12                                  ; our code starts here
+    13                                  segment code use32 class=code
+    14                                      start:
+    15 00000000 66A1[01000000]                  mov AX, word [b]
+    16 00000006 F635[00000000]                  div byte [a] ;AL = AX/a = b/a = 40/10 = 4
+    17 0000000C B302                            mov BL, 2
+    18 0000000E F6E3                            mul BL ; AX = BL*AL = 4*2 = 8
+    19 00000010 6683C00A                        add AX, 10; AX = 8+10 = 18
+    20                                          ;(....)*b -> word*word
+    21 00000014 66F725[01000000]                mul word [b]; DX:AX = AX*b = (b / a * 2 + 10) * b = 18*41
+    22                                          ;DX:AX -> EBX
+    23 0000001B 6652                            push DX
+    24 0000001D 6650                            push AX
+    25 0000001F 5B                              pop EBX ;EBX = 18*41
+    26 00000020 66B80F00                        mov AX, 15
+    27 00000024 66F725[01000000]                mul word [b] ; DX;AX = b*AX = b*15
+    28 0000002B 6652                            push DX
+    29 0000002D 6650                            push AX
+    30 0000002F 58                              pop EAX ; EAX = b*15
+    31 00000030 29C3                            sub EBX, EAX ; EBX = (b / a * 2 + 10) * b - b * 15;
+    32 00000032 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    33 00000034 FF15[00000000]                  call    [exit]       ; call exit to terminate the program

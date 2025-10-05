@@ -1,0 +1,103 @@
+     1                                  bits 32
+     2                                  global start        
+     3                                  extern exit, fopen, fscanf, fclose , printf          
+     4                                  import exit msvcrt.dll  
+     5                                  import fopen msvcrt.dll  
+     6                                  import fscanf msvcrt.dll
+     7                                  import fclose msvcrt.dll
+     8                                  import printf msvcrt.dll
+     9                                  segment data use32 class=data
+    10 00000000 6E756D626572732E74-         file db "numbers.txt", 0
+    10 00000009 787400             
+    11 0000000C 7200                        access_mode db "r", 0
+    12 0000000E 00000000                    file_descriptor dd 0
+    13 00000012 <res 00000190>              numbers_list resd 100
+    14 000001A2 25640A00                    format db "%d", 10, 0
+    15 000001A6 00000000                    buffer dd 0
+    16 000001AA 00000000                    index dd 0
+    17 000001AE 00                          iterator db 0
+    18 000001AF 00000000                    max dd 0
+    19 000001B3 01000000                    product dd 1
+    20 000001B7 00000000                    sum dd 0
+    21 000001BB 73756D203D2025642C-         output_format db "sum = %d, product = %d, max = %d", 0
+    21 000001C4 2070726F6475637420-
+    21 000001CD 3D2025642C206D6178-
+    21 000001D6 203D20256400       
+    22 000001DC 00                          counter db 0
+    23                                  segment code use32 class=code
+    24                                      start:
+    25                                          ; eax = fopen(file, access_mode) = pointer, which contains the address
+    26 00000000 68[0C000000]                    push dword access_mode
+    27 00000005 68[00000000]                    push dword file
+    28 0000000A FF15[00000000]                  call [fopen]
+    29 00000010 83C408                          add esp, 4*2
+    30                                          
+    31 00000013 A3[0E000000]                    mov [file_descriptor], eax
+    32                                          
+    33 00000018 83F800                          cmp eax, 0
+    34 0000001B 0F849F000000                    je final
+    35                                          
+    36 00000021 BE[12000000]                    mov esi, numbers_list
+    37                                          
+    38                                          read_loop:
+    39                                              ; eax = fscanf(file_descriptor, read_format, buffer) = the number of fields successfully converted and assigned
+    40 00000026 68[A6010000]                        push dword buffer
+    41 0000002B 68[A2010000]                        push dword format
+    42 00000030 FF35[0E000000]                      push dword [file_descriptor]
+    43 00000036 FF15[00000000]                      call [fscanf]
+    44 0000003C 83C40C                              add esp, 4*3
+    45                                              
+    46 0000003F 83F801                              cmp eax, 1
+    47 00000042 751E                                jne end_read
+    48                                              
+    49 00000044 A1[A6010000]                        mov eax, [buffer]
+    50 00000049 8B15[AA010000]                      mov edx, [index]
+    51 0000004F 890416                              mov [esi+edx], eax
+    52 00000052 8305[AA010000]04                    add dword[index], 4
+    53 00000059 8005[DC010000]01                    add byte[counter], 1
+    54                                              
+    55 00000060 EBC4                                jmp read_loop
+    56                                              
+    57                                          end_read:
+    58 00000062 FF35[0E000000]                      push dword [file_descriptor]
+    59 00000068 FF15[00000000]                      call [fclose]
+    60 0000006E 83C404                              add esp, 4
+    61                                              
+    62 00000071 BE[12000000]                    mov esi, numbers_list
+    63                                          
+    64 00000076 C705[AA010000]0000-             mov dword[index], 0
+    64 0000007E 0000               
+    65                                          iterate:
+    66 00000080 8A1D[AE010000]                      mov bl, byte[iterator]
+    67 00000086 3A1D[DC010000]                      cmp bl, [counter]
+    68 0000008C 7432                                je final 
+    69                                              
+    70 0000008E AD                                  lodsd
+    71                                              
+    72 0000008F 3B05[AF010000]                      cmp eax, [max]
+    73 00000095 7605                                jbe not_max
+    74 00000097 A3[AF010000]                        mov [max], eax
+    75                                              
+    76                                              not_max:
+    77 0000009C 0105[B7010000]                          add dword[sum], eax
+    78 000000A2 8B1D[B3010000]                          mov ebx, [product]
+    79 000000A8 93                                      xchg eax, ebx
+    80 000000A9 F7E3                                    mul ebx
+    81 000000AB A3[B3010000]                            mov [product], eax
+    82 000000B0 8305[AA010000]04                        add dword[index], 4
+    83 000000B7 8005[AE010000]01                        add byte[iterator], 1
+    84 000000BE EBC0                                    jmp iterate
+    85                                              
+    86                                          final:
+    87 000000C0 FF35[AF010000]                      push dword[max]
+    88 000000C6 FF35[B3010000]                      push dword[product]
+    89 000000CC FF35[B7010000]                      push dword[sum]
+    90 000000D2 FF15[00000000]                      call [fclose]
+    91 000000D8 68[BB010000]                        push dword output_format
+    92 000000DD FF15[00000000]                      call [printf]
+    93 000000E3 83C410                              add esp, 4*4
+    94                                              
+    95                                          
+    96                                          
+    97 000000E6 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    98 000000E8 FF15[00000000]                  call    [exit]       ; call exit to terminate the program

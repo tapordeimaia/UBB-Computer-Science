@@ -1,0 +1,32 @@
+     1                                  ;a,b,c - byte, d - word
+     2                                  ;d*(d+2*a)/(b*c)
+     3                                  bits 32 
+     4                                  global start        
+     5                                  extern exit               
+     6                                  import exit msvcrt.dll    
+     7                                  segment data use32 class=data
+     8 00000000 0A                              a db 10
+     9 00000001 05                              b db 5
+    10 00000002 07                              c db 7
+    11 00000003 0900                            d dw 9
+    12 00000005 0800                            e dw 8
+    13                                  segment code use32 class=code
+    14                                      start: ;d*(d+2*a)/(b*c)
+    15 00000000 A0[00000000]                    mov AL, byte [a]
+    16 00000005 668B1D[03000000]                mov BX, word [d]
+    17 0000000C B202                            mov DL,2
+    18 0000000E F6E2                            mul DL ;AX = DL*AL = 2*10 = 20 = 2*a
+    19 00000010 6601D8                          add AX, BX ;AX = AX+BX = 20+9 = 29 = (d+2*a)
+    20 00000013 66F7E3                          mul BX ;DX:AX = BX*AX = 9*29 = 261 = d*(d+2*a)
+    21 00000016 6689D3                          mov BX, DX
+    22 00000019 6689C1                          mov CX, AX
+    23 0000001C A0[02000000]                    mov AL , byte [c]
+    24 00000021 F625[01000000]                  mul byte [b] ;AX = BL*AL = 5*7 = 35 = (b*c)
+    25 00000027 66A3[05000000]                  mov word [e], AX
+    26 0000002D 6689DA                          mov DX, BX
+    27 00000030 6689C8                          mov AX, CX
+    28 00000033 66F735[05000000]                div word [e];AX = EAX/CX = 7 ;DX = EAX%CX = 16
+    29                                      
+    30                                          
+    31 0000003A 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    32 0000003C FF15[00000000]                  call    [exit]       ; call exit to terminate the program

@@ -1,0 +1,106 @@
+     1                                  ; Sa se calculeze suma, produsul numerelor, pozitiile maximului. 
+     2                                  bits 32 
+     3                                  global start        
+     4                                  extern exit, fscanf, fopen, fclose, printf       
+     5                                  import exit msvcrt.dll  
+     6                                  import fscanf msvcrt.dll  
+     7                                  import fopen msvcrt.dll
+     8                                  import fclose msvcrt.dll
+     9                                  import printf msvcrt.dll
+    10                                  segment data use32 class=data
+    11 00000000 6E756D626572734C69-         file_name db "numbersList.txt", 0
+    11 00000009 73742E74787400     
+    12 00000010 7200                        access_mode db "r", 0
+    13 00000012 00000000                    file_descriptor dd 0
+    14 00000016 256400                      reading_format db "%d", 0
+    15 00000019 00000000                    buffer dd 0
+    16                                      list_size equ 10
+    17 0000001D <res 00000028>              numbers_list resd list_size
+    18 00000045 00000000                    index_of_list dd 0
+    19 00000049 00000000                    sum dd 0
+    20 0000004D 00000000                    numbers_counter dd 0
+    21 00000051 00                          loop_iterator db 0
+    22 00000052 00000000                    max dd 0
+    23 00000056 01000000                    product dd 1
+    24 0000005A 73756D3D25642C2070-         output_format db "sum=%d, product=%d, maximum=%d", 0
+    24 00000063 726F647563743D2564-
+    24 0000006C 2C206D6178696D756D-
+    24 00000075 3D256400           
+    25                                  segment code use32 class=code
+    26                                      start:
+    27                                          ; open the file
+    28 00000000 68[10000000]                    push dword access_mode
+    29 00000005 68[00000000]                    push dword file_name
+    30 0000000A FF15[00000000]                  call [fopen]
+    31 00000010 83C408                          add esp, 4*2
+    32                                          
+    33                                          ; move the file address into file_descriptor
+    34 00000013 A3[12000000]                    mov [file_descriptor], eax
+    35                                          
+    36                                          ;check if we opened the file succesfully
+    37 00000018 83F800                          cmp eax, 0
+    38 0000001B 0F84AC000000                    je final
+    39                                          
+    40                                          reading_loop:
+    41                                              ; fscanf -> (file_descriptor, format, buffer)
+    42                                              ; reading from the file
+    43 00000021 68[19000000]                        push dword buffer
+    44 00000026 68[16000000]                        push dword reading_format
+    45 0000002B FF35[12000000]                      push dword [file_descriptor]
+    46 00000031 FF15[00000000]                      call [fscanf]
+    47 00000037 83C40C                              add esp, 4*3
+    48                                              
+    49                                              ; check if reading was successful
+    50 0000003A 83F801                              cmp eax, 1
+    51 0000003D 7522                                jne end_reading_loop
+    52                                              
+    53                                              ; move the read numbers into numbers_list
+    54 0000003F 8B1D[45000000]                      mov ebx, [index_of_list]
+    55 00000045 A1[19000000]                        mov eax, [buffer]
+    56 0000004A 89049D[1D000000]                    mov [numbers_list + ebx*4] ,eax
+    57 00000051 8305[45000000]01                    add dword [index_of_list], 1
+    58 00000058 8305[4D000000]01                    add dword [numbers_counter], 1
+    59                                              
+    60                                              ; jump to read the next number
+    61 0000005F EBC0                                jmp reading_loop
+    62                                          
+    63                                          end_reading_loop:
+    64                                              ;close the file
+    65 00000061 FF35[12000000]                      push dword [file_descriptor]
+    66 00000067 FF15[00000000]                      call [fclose]
+    67 0000006D 83C404                              add esp, 4
+    68                                              
+    69 00000070 BE[1D000000]                    mov esi, numbers_list
+    70                                          
+    71                                          get_sum_product_maximum:
+    72 00000075 8A1D[51000000]                      mov bl, byte[loop_iterator]
+    73 0000007B 3A1D[4D000000]                      cmp bl, [numbers_counter]
+    74 00000081 742A                                je print_sum_product_maximum
+    75                                              
+    76 00000083 AD                                  lodsd
+    77                                              
+    78 00000084 3B05[52000000]                      cmp eax, [max] 
+    79 0000008A 7605                                jbe not_max
+    80 0000008C A3[52000000]                        mov [max], eax
+    81                                              
+    82                                              not_max:
+    83 00000091 0105[49000000]                          add dword[sum], eax
+    84                                              
+    85 00000097 8B1D[56000000]                          mov ebx, [product]
+    86 0000009D F7E3                                    mul ebx
+    87 0000009F A3[56000000]                            mov [product], eax
+    88                                                  
+    89 000000A4 8005[51000000]01                        add byte[loop_iterator], 1
+    90 000000AB EBC8                                    jmp get_sum_product_maximum
+    91                                          
+    92                                          print_sum_product_maximum:
+    93 000000AD FF35[52000000]                      push dword [max]
+    94 000000B3 FF35[56000000]                      push dword [product]
+    95 000000B9 FF35[49000000]                      push dword [sum]
+    96 000000BF 68[5A000000]                        push dword output_format
+    97 000000C4 FF15[00000000]                      call [printf]
+    98 000000CA 83C410                              add esp, 4*4
+    99                                          
+   100                                      final:
+   101 000000CD 6A00                            push    dword 0      
+   102 000000CF FF15[00000000]                  call    [exit]       

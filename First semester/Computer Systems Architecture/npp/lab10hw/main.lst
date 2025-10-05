@@ -1,0 +1,75 @@
+     1                                  ; Read from the keyboard a string of numbers, given in the base 10 as signed numbers (a string of characters is read from the keyboard and a string of numbers must be stored in the memory).
+     2                                  
+     3                                  bits 32
+     4                                  global start        
+     5                                  
+     6                                  extern exit, printf           
+     7                                  import exit msvcrt.dll
+     8                                  import printf msvcrt.dll
+     9                                  
+    10                                  extern read_input
+    11                                  extern parse_numbers
+    12                                  import read_input msvcrt.dll
+    13                                  import parse_numbers msvcrt.dll
+    14                                  
+    15                                  segment data public data use32
+    16 00000000 456E74657220612073-         prompt db "Enter a string of signed numbers (e.g., -12 34 -56): ", 0
+    16 00000009 7472696E67206F6620-
+    16 00000012 7369676E6564206E75-
+    16 0000001B 6D626572732028652E-
+    16 00000024 672E2C202D31322033-
+    16 0000002D 34202D3536293A2000 
+    17 00000036 506172736564206E75-         parsed_msg db "Parsed numbers: ", 0
+    17 0000003F 6D626572733A2000   
+    18 00000047 6400                        buffer db 100, 0           ; Space for input string (null-terminated)
+    19 00000049 3200000000000000            numbers dd 50, 0           ; Array for storing the parsed numbers
+    20 00000051 00                          num_count db 0                 ; To store the count of parsed integers
+    21 00000052 25642000                    num_format db "%d ", 0         ; Format for printing numbers
+    22                                  
+    23                                  segment code public code use32
+    24                                  start:
+    25                                      ; Prompt the user
+    26 00000000 68[00000000]                push dword prompt
+    27 00000005 FF15[00000000]              call [printf]
+    28 0000000B 83C404                      add esp, 4
+    29                                  
+    30                                      ; Call read_input to get the string from the user
+    31 0000000E 68[47000000]                push dword buffer
+    32 00000013 E8(00000000)                call read_input
+    33 00000018 83C404                      add esp, 4
+    34                                  
+    35                                      ; Call parse_numbers to process the string
+    36 0000001B B9[47000000]                mov ecx, buffer         ; Address of the input buffer
+    37 00000020 BA[49000000]                mov edx, numbers        ; Address of the numbers array
+    38 00000025 BF[51000000]                mov edi, num_count      ; Address to store the count of parsed numbers
+    39 0000002A E8(00000000)                call parse_numbers
+    40                                  
+    41                                      ; Print "Parsed numbers: "
+    42 0000002F 68[36000000]                push dword parsed_msg
+    43 00000034 FF15[00000000]              call [printf]
+    44 0000003A 83C404                      add esp, 4
+    45                                  
+    46                                      ; Print each parsed number
+    47 0000003D 0FB60D[51000000]            movzx ecx, byte[num_count]    ; Load num_count into ECX
+    48 00000044 85C9                        test ecx, ecx                  ; Check if any numbers were parsed
+    49 00000046 741C                        jz end_program                 ; If no numbers, skip to the end
+    50                                  
+    51 00000048 BE[49000000]                mov esi, numbers               ; Point to the numbers array
+    52                                      print_loop:
+    53 0000004D 8B06                            mov eax, [esi]                 ; Load the current number
+    54 0000004F 50                              push eax                       ; Push the number to the stack
+    55 00000050 68[52000000]                    push dword num_format          ; Push the format string
+    56 00000055 FF15[00000000]                  call [printf]                  ; Call printf to print the number
+    57 0000005B 83C408                          add esp, 8                     ; Clean up the stack (2 arguments)
+    58 0000005E 83C604                          add esi, 4                     ; Move to the next number
+    59 00000061 49                              dec ecx                        ; Decrement the counter
+    60 00000062 75E9                            jnz print_loop                 ; Repeat if more numbers remain
+    61                                  
+    62                                  end_program:
+    63                                      ; Exit the program
+    64 00000064 6A00                        push dword 0
+    65 00000066 FF15[00000000]              call [exit]
+    66                                  
+    67                                  
+    68                                  
+    69                                  

@@ -1,0 +1,93 @@
+     1                                  ; Sa se sorteze sirul de numere.
+     2                                  bits 32 
+     3                                  global start        
+     4                                  extern exit, fopen, fscanf, fclose, printf            
+     5                                  import exit msvcrt.dll 
+     6                                  import fopen msvcrt.dll
+     7                                  import fscanf msvcrt.dll
+     8                                  import fclose msvcrt.dll
+     9                                  import printf msvcrt.dll
+    10                                  segment data use32 class=data
+    11 00000000 6E756D626572734C69-         numbers_file db "numbersList.txt", 0
+    11 00000009 73742E74787400     
+    12 00000010 7200                        acces_mode db "r", 0
+    13 00000012 00000000                    file_descriptor dd 0
+    14 00000016 00000000                    buffer dd 0
+    15 0000001A 256400                      reading_format db "%d", 0
+    16 0000001D 00000000                    index_of_list dd 0
+    17                                      numbers_list_length equ 10
+    18 00000021 <res 00000028>              numbers_list resd numbers_list_length 
+    19 00000049 00000000                    numbers_counter dd 0
+    20 0000004D 00000000                    loop_counter dd 0
+    21 00000051 25642000                    writing_format db "%d ", 0
+    22 00000055 0A00                        newline db 0x0A, 0
+    23                                  segment code use32 class=code
+    24                                      start:
+    25 00000000 68[10000000]                    push dword acces_mode
+    26 00000005 68[00000000]                    push dword numbers_file
+    27 0000000A FF15[00000000]                  call [fopen]
+    28 00000010 83C408                          add esp, 4*2
+    29                                          
+    30 00000013 A3[12000000]                    mov [file_descriptor], eax
+    31                                          
+    32 00000018 83F800                          cmp eax, 0
+    33 0000001B 0F84A2000000                    je final
+    34                                          
+    35                                          reading_loop:
+    36 00000021 68[16000000]                        push dword buffer
+    37 00000026 68[1A000000]                        push dword reading_format
+    38 0000002B FF35[12000000]                      push dword [file_descriptor]
+    39 00000031 FF15[00000000]                      call [fscanf]
+    40 00000037 83C40C                              add esp, 4*3
+    41                                              
+    42 0000003A 83F801                              cmp eax, 1
+    43 0000003D 7522                                jne end_reading_loop
+    44                                              
+    45 0000003F 8B1D[1D000000]                      mov ebx, [index_of_list]
+    46 00000045 A1[16000000]                        mov eax, [buffer]
+    47 0000004A 89049D[21000000]                    mov [numbers_list + ebx*4], eax
+    48 00000051 8305[1D000000]01                    add dword [index_of_list], 1
+    49 00000058 8305[49000000]01                    add dword [numbers_counter], 1
+    50                                              
+    51 0000005F EBC0                                jmp reading_loop
+    52                                              
+    53                                          end_reading_loop:
+    54 00000061 FF35[12000000]                      push dword [file_descriptor]
+    55 00000067 FF15[00000000]                      call [fclose]
+    56 0000006D 83C404                              add esp, 4
+    57                                            
+    58 00000070 8B0D[49000000]                  mov ecx, [numbers_counter]
+    59 00000076 49                              dec ecx
+    60                                          bubble_sort_outer:
+    61 00000077 BE00000000                          mov esi, 0
+    62 0000007C 89CA                                mov edx, ecx
+    63                                              
+    64                                              bubble_sort_inner:
+    65 0000007E 8B04B5[21000000]                        mov eax, [numbers_list + esi*4]
+    66 00000085 8B1CB5[25000000]                        mov ebx, [numbers_list + esi*4 + 4]
+    67 0000008C 39D8                                    cmp eax, ebx
+    68 0000008E 7E0E                                    jle no_swap
+    69 00000090 891CB5[21000000]                        mov [numbers_list+esi*4], ebx
+    70 00000097 8904B5[25000000]                        mov [numbers_list + esi*4 + 4], eax
+    71                                                  
+    72                                                  no_swap:
+    73 0000009E 46                                          inc esi
+    74 0000009F 4A                                          dec edx
+    75 000000A0 75DC                                        jnz bubble_sort_inner
+    76 000000A2 49                                          dec ecx
+    77 000000A3 75D2                                        jnz bubble_sort_outer
+    78                                           
+    79 000000A5 8B1D[49000000]                  mov ebx, [numbers_counter]
+    80 000000AB BE[21000000]                    mov esi, numbers_list
+    81                                          print_sorted_numbers:
+    82 000000B0 AD                                  lodsd
+    83 000000B1 50                                  push eax 
+    84 000000B2 68[51000000]                        push dword writing_format
+    85 000000B7 FF15[00000000]                      call [printf]
+    86 000000BD 83C408                              add esp, 4*2
+    87 000000C0 4B                                  dec ebx
+    88 000000C1 75ED                                jnz print_sorted_numbers
+    89                                              
+    90                                       final:   
+    91 000000C3 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    92 000000C5 FF15[00000000]                  call    [exit]       ; call exit to terminate the program

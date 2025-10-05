@@ -1,0 +1,60 @@
+     1                                  ;Problem. A string of quadwords is given. Compute the number of multiples of 8 from
+     2                                  ;the string of the low bytes of the high word of the high doubleword from the elements of the quadword string 
+     3                                  ;and find the sum of the digits (in base 10) of this number. ; unsigned
+     4                                  
+     5                                  ;Solution: We first parse the quadword string and obtain the number of multiples of 8
+     6                                  ;from the string of the low bytes of the high word of the high doubleword from the elements of the quadword string.
+     7                                  ;Then we obtain the digits of this number by successive divisions to 10 and then compute the sum of these digits
+     8                                  bits 32 ; assembling for the 32 bits architecture
+     9                                  
+    10                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+    11                                  global start        
+    12                                  
+    13                                  ; declare external functions needed by our program
+    14                                  extern exit               ; tell nasm that exit exists even if we won't be defining it
+    15                                  import exit msvcrt.dll    ; exit is a function that ends the calling process. It is defined in msvcrt.dll
+    16                                                            ; msvcrt.dll contains exit, printf and all the other important C-runtime specific functions
+    17                                  
+    18                                  ; our data is declared here (the variables needed by our program)
+    19                                  segment data use32 class=data
+    20 00000000 B0BC0A1110311200D2-         sir  dq  00123110110abcb0h,1116adcb5a051ad2h,4120ca11d730cbb0h
+    20 00000009 1A055ACBAD1611B0CB-
+    20 00000012 30D711CA2041       
+    21                                  	len equ ($-sir)/8;the length of the string (in quadwords) 
+    22 00000018 08                      	opt db 8;variabile used for testing divisibility to 8
+    23 00000019 0A000000                	zece dd 10;variabile used for determining the digits in base 10 of a number by successive divisions to 10
+    24 0000001D 00000000                	suma dd  0;variabile used for holding the sum of the digits
+    25                                  segment code use32 class=code
+    26                                      start:
+    27 00000000 B300                            mov bl, 0
+    28 00000002 BE[00000000]                    mov esi, sir
+    29 00000007 B903000000                      mov ecx, len
+    30 0000000C E316                            jecxz end_loop
+    31                                          repeat:
+    32 0000000E AD                                  lodsd ; eax = low dword and increments esi with 4 ; 110abcb0
+    33 0000000F 66AD                                lodsw ; ax = low word of high dword and ic esi with 2 ; 3110
+    34 00000011 66AD                                lodsw ; ax = 0012 high word from the double word and inc esi with 2
+    35                                              ; AL contains low byte of the high word of the high doubleword
+    36 00000013 B400                                mov AH, 0 ; AX = AL unsigned conversion
+    37 00000015 F635[18000000]                      div byte[opt] ; AL=AX/opt, AH=AX%opt
+    38 0000001B 80FC00                              cmp AH, 0
+    39 0000001E 7502                                JNE dont_increment
+    40 00000020 FEC3                                    inc bl ; found a multiple of 8
+    41                                              dont_increment:
+    42 00000022 E2EA                            loop repeat
+    43                                          end_loop:
+    44                                          
+    45                                          ; sum of digits of bl
+    46 00000024 88D8                            mov al, bl
+    47 00000026 B300                            mov bl, 0
+    48                                          sum_loop:
+    49 00000028 B400                                mov ah, 0 ; ax=bl
+    50 0000002A F635[19000000]                      div byte[zece] ; al=bl/10, ah=bl%10
+    51 00000030 00E3                                add bl, ah
+    52 00000032 3C00                                cmp al, 0
+    53 00000034 7402                                je out_of_loop
+    54 00000036 EBF0                            jmp sum_loop
+    55                                          out_of_loop:
+    56                                          
+    57 00000038 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    58 0000003A FF15[00000000]                  call    [exit]       ; call exit to terminate the program
